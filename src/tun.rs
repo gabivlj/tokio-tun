@@ -64,7 +64,7 @@ impl AsyncWrite for Tun {
     ) -> Poll<std::result::Result<usize, io::Error>> {
         let self_mut = self.get_mut();
         loop {
-            let mut guard = ready!(self_mut.io.poll_write_ready_mut(cx))?;
+            let mut guard = ready!(self_mut.io.0.poll_write_ready_mut(cx))?;
 
             match guard.try_io(|inner| inner.get_mut().write_vectored(bufs)) {
                 Ok(result) => return Poll::Ready(result),
@@ -173,7 +173,7 @@ impl Tun {
     /// This method takes &self, so it is possible to call this method concurrently with other methods on this struct.
     pub async fn send_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
         loop {
-            let mut guard = self.io.writable().await?;
+            let mut guard = self.io.0.writable().await?;
             match guard.try_io(|inner| inner.get_ref().sendv(bufs)) {
                 Ok(res) => return res,
                 Err(_) => continue,
@@ -205,7 +205,7 @@ impl Tun {
     ///
     /// This method takes &self, so it is possible to call this method concurrently with other methods on this struct.
     pub fn try_send_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
-        self.io.get_ref().sendv(bufs)
+        self.io.0.get_ref().sendv(bufs)
     }
 
     /// Returns the name of Tun/Tap device.
